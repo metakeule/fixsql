@@ -56,16 +56,24 @@ func interpretScanError(in error) (out error) {
 	return ScanError(in.Error())
 }
 
+type Execer interface {
+	Exec(query string, args ...interface{}) (sql.Result, error)
+}
+
 /*
 	runs *database/sql.DB.Exec() and returns the result
 	The returned errors are typed, so that an error caused by a closed
 	database returns an error of type ConnectionClosed and every other
 	error is of type InvalidStatement
 */
-func Exec(db *sql.DB, query string, args ...interface{}) (res sql.Result, err error) {
-	res, err = db.Exec(query, args...)
+func Exec(x Execer, query string, args ...interface{}) (res sql.Result, err error) {
+	res, err = x.Exec(query, args...)
 	err = interpretError(err)
 	return
+}
+
+type Queryer interface {
+	Query(query string, args ...interface{}) (*sql.Rows, error)
 }
 
 /*
@@ -74,10 +82,14 @@ func Exec(db *sql.DB, query string, args ...interface{}) (res sql.Result, err er
 	database returns an error of type ConnectionClosed and every other
 	error is of type InvalidStatement
 */
-func Query(db *sql.DB, query string, args ...interface{}) (rows *sql.Rows, err error) {
-	rows, err = db.Query(query, args...)
+func Query(q Queryer, query string, args ...interface{}) (rows *sql.Rows, err error) {
+	rows, err = q.Query(query, args...)
 	err = interpretError(err)
 	return
+}
+
+type Preparer interface {
+	Prepare(query string) (*sql.Stmt, error)
 }
 
 /*
@@ -86,8 +98,8 @@ func Query(db *sql.DB, query string, args ...interface{}) (rows *sql.Rows, err e
 	database returns an error of type ConnectionClosed and every other
 	error is of type InvalidStatement
 */
-func Prepare(db *sql.DB, query string) (st *sql.Stmt, err error) {
-	st, err = db.Prepare(query)
+func Prepare(p Preparer, query string) (st *sql.Stmt, err error) {
+	st, err = p.Prepare(query)
 	err = interpretError(err)
 	return
 }
@@ -109,4 +121,26 @@ func Each(rows *sql.Rows, fn func() (dest []interface{})) (num int, err error) {
 		num++
 	}
 	return
+}
+
+// Transaction creates a transaction and calls every given
+// function on it. If a function returns an error the transaction
+// is rolled back and the error is returned.
+// If every function did return without error, the transaction is
+// committed
+func Transaction(db *sql.DB, fns ...func(*sql.Tx) error) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
+	for _, fn := range fns {
+		err := fn(tx)
+		if err != nil {
+			tx.Rollback()
+		}
+		return err
+	}
+
+	return tx.Commit()
 }
