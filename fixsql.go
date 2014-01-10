@@ -46,6 +46,16 @@ func interpretError(in error) (out error) {
 	return InvalidStatement(in.Error())
 }
 
+func interpretScanError(in error) (out error) {
+	if in == nil {
+		return nil
+	}
+	if in.Error() == "sql: database is closed" {
+		return ConnectionClosed{}
+	}
+	return ScanError(in.Error())
+}
+
 /*
 	runs *database/sql.DB.Exec() and returns the result
 	The returned errors are typed, so that an error caused by a closed
@@ -93,6 +103,7 @@ func Each(rows *sql.Rows, fn func() (dest []interface{})) (num int, err error) {
 	for rows.Next() {
 		err = rows.Scan(fn()...)
 		if err != nil {
+			err = interpretScanError(err)
 			return
 		}
 		num++

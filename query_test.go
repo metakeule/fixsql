@@ -67,3 +67,30 @@ func TestEach(t *testing.T) {
 		t.Errorf("s should be `one`, but is %#v", s)
 	}
 }
+
+func TestEachError(t *testing.T) {
+	db := open()
+	defer db.Close()
+	rows, _ := Query(db, "select 1, 'one'")
+
+	var i int
+	var s int
+
+	fn := func() []interface{} { return []interface{}{&i, &s} }
+
+	num, err := Each(rows, fn)
+
+	if err == nil {
+		t.Errorf("invalid Scan should return an error")
+	}
+
+	_, ok := err.(ScanError)
+
+	if !ok {
+		t.Errorf("invalid Scan should return an error of Type ScanError")
+	}
+
+	if num != 0 {
+		t.Errorf("invalid Scan should return 1 row, but returns %d", num)
+	}
+}

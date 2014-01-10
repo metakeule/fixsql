@@ -27,3 +27,9 @@ type InvalidStatement string
 func (i InvalidStatement) Error() string {
 	return fmt.Sprintf("invalid statement %#v", string(i))
 }
+
+type ScanError string
+
+func (s ScanError) Error() string {
+	return fmt.Sprintf("scan error %#v", string(s))
+}

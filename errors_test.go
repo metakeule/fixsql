@@ -15,6 +15,7 @@ func TestErrorStrings(t *testing.T) {
 		ConnectionError("xyz"):  `connection error "xyz"`,
 		ConnectionClosed{}:      "sql: database is closed",
 		InvalidStatement("xyz"): `invalid statement "xyz"`,
+		ScanError("xyz"):        `scan error "xyz"`,
 	}
 
 	for err, expected := range testcases {
