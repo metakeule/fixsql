@@ -10,8 +10,20 @@ func (u UnknownDriver) Error() string {
 	return fmt.Sprintf("unknown driver \"%s\"", string(u))
 }
 
-type InvalidDataSource string
+type ConnectionError string
 
-func (i InvalidDataSource) Error() string {
-	return fmt.Sprintf("invalid data source \"%s\"", string(i))
+func (ce ConnectionError) Error() string {
+	return fmt.Sprintf("connection error \"%s\"", string(ce))
+}
+
+type ConnectionClosed struct{}
+
+func (ce ConnectionClosed) Error() string {
+	return "sql: database is closed"
+}
+
+type InvalidStatement string
+
+func (i InvalidStatement) Error() string {
+	return fmt.Sprintf("invalid statement %#v", string(i))
 }

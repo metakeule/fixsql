@@ -11,8 +11,10 @@ func errString(err error) string {
 func TestErrorStrings(t *testing.T) {
 
 	testcases := map[error]string{
-		UnknownDriver("xyz"):     `unknown driver "xyz"`,
-		InvalidDataSource("xyz"): `invalid data source "xyz"`,
+		UnknownDriver("xyz"):    `unknown driver "xyz"`,
+		ConnectionError("xyz"):  `connection error "xyz"`,
+		ConnectionClosed{}:      "sql: database is closed",
+		InvalidStatement("xyz"): `invalid statement "xyz"`,
 	}
 
 	for err, expected := range testcases {
