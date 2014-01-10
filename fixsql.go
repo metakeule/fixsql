@@ -92,6 +92,12 @@ type Preparer interface {
 	Prepare(query string) (*sql.Stmt, error)
 }
 
+type DB interface {
+	Preparer
+	Queryer
+	Execer
+}
+
 /*
 	runs *database/sql.DB.Prepare() and returns the result
 	The returned errors are typed, so that an error caused by a closed
@@ -128,7 +134,7 @@ func Each(rows *sql.Rows, fn func() (dest []interface{})) (num int, err error) {
 // is rolled back and the error is returned.
 // If every function did return without error, the transaction is
 // committed
-func Transaction(db *sql.DB, fns ...func(*sql.Tx) error) error {
+func Transaction(db *sql.DB, fns ...func(DB) error) error {
 	tx, err := db.Begin()
 	if err != nil {
 		return err
@@ -138,9 +144,11 @@ func Transaction(db *sql.DB, fns ...func(*sql.Tx) error) error {
 		err := fn(tx)
 		if err != nil {
 			tx.Rollback()
+			return err
 		}
-		return err
 	}
 
-	return tx.Commit()
+	err = tx.Commit()
+	err = interpretScanError(err)
+	return err
 }
