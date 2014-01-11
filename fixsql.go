@@ -129,6 +129,16 @@ func Each(rows *sql.Rows, fn func() (dest []interface{})) (num int, err error) {
 	return
 }
 
+// runs a query and iterates through each result
+func QueryEach(q Queryer, fn func() (dest []interface{}), query string, args ...interface{}) (num int, err error) {
+	var rows *sql.Rows
+	rows, err = Query(q, query, args...)
+	if err != nil {
+		return
+	}
+	return Each(rows, fn)
+}
+
 // Transaction creates a transaction and calls every given
 // function on it. If a function returns an error the transaction
 // is rolled back and the error is returned.
